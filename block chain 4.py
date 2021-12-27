@@ -1,21 +1,17 @@
-import hashlib
-import datetime
-import json
-import socket
-import threading
-import random
+import hashlib, datetime, json, socket, threading, random
 
 my_ip = "192.168.247.134" #kali ip
 my_port = 6134 # klai port
-ip_list = ["192.168.247.134","192.168.247.135"]
-port_list = [6134,6135]
+
+ip_list = ["192.168.247.134"]
+port_list = [6134]
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((my_ip, my_port))
 server.listen()
 
 
-
+############# Block and Block Chain #############
 class Block:
     def __init__(self,index,time_stamp,sitting_number,student_name,subject,data,previous_hash) -> None:
         self.index = index
@@ -59,6 +55,19 @@ class Block_Chain:
     def __last_block__(self) -> Block:
         return self.Chain[-1]
     
+    def get_block_by_name(self,name : str) -> Block:
+        for i in range(len(self.Chain)):
+            if self.Chain[i].block["student_name"] == name:
+                return self.Chain[i]
+        print("--> could not find the block associated with name you searched for")
+
+    def get_block_by_sitting_number(self,sitting_number : str) -> Block:
+        for i in range(len(self.Chain)):
+            if self.Chain[i].block["sitting_number"] == sitting_number:
+                return self.Chain[i]
+        print("--> could not find the block associated with sitting number you searched for")
+
+
     def __hash_function__(self,block) -> hash:
         header = str(block.block["index"]) + str(block.block["time_stamp"]) +str(block.block["sitting_number"]) +str(block.block["student_name"]) +str(block.block["subject"]) + str(block.block["data"])  + str(block.block["previous_hash"]) + str(block.block["nonce"])
         inner_hash = hashlib.sha256(header.encode()).hexdigest().encode()
@@ -99,13 +108,11 @@ class Block_Chain:
         self.__add_block_to_block_chain__(b)
 
 
-
-
 b1 = Block_Chain()
 
 
 
-#### Peer To Peer Network ####
+############# Peer To Peer Network #############
 def dict_to_block(dictt) -> Block:
     a_block = Block(dictt["index"],dictt["time_stamp"],dictt["sitting_number"],dictt["student_name"],dictt["subject"],dictt["data"],dictt["previous_hash"])
     a_block.block["data"] = dictt["data"]
@@ -125,7 +132,7 @@ def broadcast_block(block): # broadcasts blocks
             pass
 
 def send_random_string(string): #broadcasts strings
-    while True:
+    for i in range(0,30):
         try:
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             randomclient = random.randint(1,len(ip_list)-1) #should start at one becouse the random person should never be the same person
@@ -137,7 +144,6 @@ def send_random_string(string): #broadcasts strings
         except:
             continue
             
-
 def send_random_block(block): # sends a block to random person
     while True:
         try:
@@ -150,8 +156,6 @@ def send_random_block(block): # sends a block to random person
             break
         except:
             continue
-
-
 
 def receive():
     while True:
@@ -188,30 +192,20 @@ def receive():
         if type(receved) is str:
             if receved == "send latest":
                 new_list=[]
-                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 ip, _sent_port = address
                 index = ip_list.index(str(ip))
-                client.connect((ip_list[index], port_list[index]))
                 for i in range(len(b1.Chain)):
                     block = b1.Chain[i]
                     dict_from_block = block.block
                     new_list.append(dict_from_block)
+                
+                for k in range(1,len(new_list)): # start at one to not send the first block
+                    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    client.connect((ip_list[index], port_list[index]))
+                    dictr = json.dumps(new_list[k])
+                    client.send(dictr.encode('utf-8'))
+                    client.close()
 
-                json_list = json.dumps(new_list)
-                client.send(json_list.encode('utf-8'))
-                client.close()
-        
-        if type(receved) is list:
-            b1.Chain.clear()
-            for i in range(len(receved)):
-                block_from_dict = dict_to_block(receved[i])
-                b1.Chain.append(block_from_dict)
-            print("--> got the new list and updated it ")
-        
-
-
-def voting(): # asks for the corect blocks
-    send_random_string("send latest")
 
 
 def menu():
@@ -219,7 +213,8 @@ def menu():
         print("= = = = = = = = = Menu = = = = = = = = =")
         print("1.type create --> to create a new block")
         print("2.type see    --> to see the curent version of blockcahin you have")
-        print("3.type search --> to search the block chain")
+        print("3.type search name --> to search the block chain by name")
+        print("3.type search number --> to search the block chain by sitting number")
         print("4.type update --> to update your block chain")
         print("5. type exit  --> to exit the program\n")
         inputt = input("What whould you like to do : \n")
@@ -241,17 +236,29 @@ def menu():
         elif inputt == "see":
             print(b1)
         
-        if inputt == "search":
-            pass
+        if inputt == "search name":
+            name_looking_for = str(input("Please enter the name of the student you are looking for: "))
+            print(b1.get_block_by_name(name_looking_for))
 
+        if inputt == "search number":
+            setting_number_looking_for = str(input("Please enter the name of the student you are looking for: "))
+            print(b1.get_block_by_sitting_number(setting_number_looking_for))
+        
         if inputt == "update":
-            voting()
+            send_random_string("send latest")
 
         if inputt == "exit":
             break
 
         # else:
         #     print("sorry I did not understand that")
+ # start the voting function on start up
+
+
+
+
+############# Threading and Get Update On Startup #############
+send_random_string("send latest")
 
 receive_thread = threading.Thread(target=receive)
 receive_thread.start()
