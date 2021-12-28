@@ -1,14 +1,21 @@
-import hashlib, datetime, json, socket, threading, random
+import hashlib, datetime, json, socket, threading, random, time
 
-my_ip = "192.168.247.134" #kali ip
-my_port = 6134 # klai port
+"""get my ip and static port"""
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.connect(("8.8.8.8", 80))
+my_ip = s.getsockname()[0]
+my_port = 6666 # static port
+s.close()
+"""''''''''''''''''''''''''''''"""
 
-ip_list = ["192.168.247.134"]
-port_list = [6134]
 
+"""Start Server And Set list of IPs And Ports"""
+ip_list = [my_ip]
+port_list = [my_port]
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((my_ip, my_port))
 server.listen()
+"""''''''''''''''''''''''''''''"""
 
 
 ############# Block and Block Chain #############
@@ -121,7 +128,7 @@ def dict_to_block(dictt) -> Block:
     return a_block
 
 def broadcast_block(block): # broadcasts blocks
-    for i in range(len(ip_list)):
+    for i in range(1,len(ip_list)):
         try:
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client.connect((ip_list[i], port_list[i]))
@@ -159,9 +166,7 @@ def send_random_block(block): # sends a block to random person
 
 def receive():
     while True:
-        # print('--> p2p is running and listening ...')
         client, address = server.accept()
-        # print("--> newconnection with : "+  str(address))
         somthing_sent = client.recv(1024)
         decoded_somthing = somthing_sent.decode()
         receved = json.loads(decoded_somthing)
@@ -205,6 +210,49 @@ def receive():
                     dictr = json.dumps(new_list[k])
                     client.send(dictr.encode('utf-8'))
                     client.close()
+            
+            if receved[:10] == "j--network":
+                ip = receved[10:]
+                send = ("add" + ip)
+                for i in range(1,len(ip_list)):
+                    try:
+                        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        client.connect((ip_list[i], port_list[i]))
+                        json_block_dict = json.dumps(send)
+                        client.send(json_block_dict.encode('utf-8'))
+                        client.close()
+                    except:
+                        pass
+                if str(ip) not in ip_list:
+                    ip_list.append(str(ip))
+                    port_list.append(6666)
+                
+                lsend = ("l-add" + my_ip)
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((ip,6666))
+                json_block_dict = json.dumps(lsend)
+                client.send(json_block_dict.encode('utf-8'))
+                client.close()
+                
+            
+            if receved[:3] == "add":
+                ip = receved[3:]
+                if str(ip) not in ip_list:
+                    ip_list.append(str(ip))
+                    port_list.append(6666)
+                
+                lsend = ("l-add" + my_ip)
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((ip,6666))
+                json_block_dict = json.dumps(lsend)
+                client.send(json_block_dict.encode('utf-8'))
+                client.close()
+            
+            if receved[:5] == "l-add":
+                ip = receved[5:]
+                if str(ip) not in ip_list:
+                    ip_list.append(str(ip))
+                    port_list.append(6666)
 
 
 
@@ -215,8 +263,10 @@ def menu():
         print("2.type see    --> to see the curent version of blockcahin you have")
         print("3.type search name --> to search the block chain by name")
         print("3.type search number --> to search the block chain by sitting number")
-        print("4.type update --> to update your block chain")
-        print("5. type exit  --> to exit the program\n")
+        print("4.type join --> to join the P2P network")
+        print("4.type peers --> to see all the peers on the network")
+        print("5.type update --> to update your block chain")
+        print("6.type exit  --> to exit the program")
         inputt = input("What whould you like to do : \n")
         
         if inputt == "create":
@@ -232,7 +282,6 @@ def menu():
             print("--> Block created")
             print("--> your block is sent for proofing")
 
-
         elif inputt == "see":
             print(b1)
         
@@ -244,21 +293,31 @@ def menu():
             setting_number_looking_for = str(input("Please enter the name of the student you are looking for: "))
             print(b1.get_block_by_sitting_number(setting_number_looking_for))
         
+        if inputt == "join":
+            if len(ip_list) == 1:
+                ip_input = str(input("Please enter an Ip of a node on the network: "))
+                j_send = ("j--network" + my_ip)
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((ip_input,6666))
+                json_block_dict = json.dumps(j_send)
+                client.send(json_block_dict.encode('utf-8'))
+                client.close()
+                time.sleep(2) # Sleep for 2 seconds before geting last version of the block cahin
+                send_random_string("send latest")
+            if len(ip_list) > 1:
+                print("--> you are already on the network")
+            
+        if inputt == "peers":
+            print(ip_list)
+        
         if inputt == "update":
             send_random_string("send latest")
 
         if inputt == "exit":
             break
 
-        # else:
-        #     print("sorry I did not understand that")
- # start the voting function on start up
 
-
-
-
-############# Threading and Get Update On Startup #############
-send_random_string("send latest")
+############# Threading #############
 
 receive_thread = threading.Thread(target=receive)
 receive_thread.start()
