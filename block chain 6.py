@@ -1,24 +1,7 @@
 import hashlib, datetime, json, socket, threading, random, time
 
-"""get my ip and static port"""
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect(("8.8.8.8", 80))
-my_ip = s.getsockname()[0]
-my_port = 6666 # static port
-s.close()
-"""''''''''''''''''''''''''''''"""
 
-
-"""Start Server And Set list of IPs And Ports"""
-ip_list = [my_ip]
-port_list = [my_port]
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((my_ip, my_port))
-server.listen()
-"""''''''''''''''''''''''''''''"""
-
-
-############# Block and Block Chain #############
+############# Block, BlockChain, And P2P Classes #############
 class Block:
     def __init__(self,index,time_stamp,sitting_number,student_name,subject,data,previous_hash) -> None:
         self.index = index
@@ -114,71 +97,98 @@ class Block_Chain:
         b = self.__mine_block__(a)
         self.__add_block_to_block_chain__(b)
 
-
-b1 = Block_Chain()
-
-
-
-############# Peer To Peer Network #############
-def dict_to_block(dictt) -> Block:
-    a_block = Block(dictt["index"],dictt["time_stamp"],dictt["sitting_number"],dictt["student_name"],dictt["subject"],dictt["data"],dictt["previous_hash"])
-    a_block.block["data"] = dictt["data"]
-    a_block.block["nonce"] = dictt["nonce"]
-    a_block.block["hash"] = dictt["hash"]
-    return a_block
-
-def broadcast_block(block): # broadcasts blocks
-    for i in range(1,len(ip_list)):
-        try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((ip_list[i], port_list[i]))
-            json_block_dict = json.dumps(block.block)
-            client.send(json_block_dict.encode('utf-8'))
-            client.close()
-        except:
-            pass
-
-def send_random_string(string): #broadcasts strings
-    for i in range(0,30):
-        try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            randomclient = random.randint(1,len(ip_list)-1) #should start at one becouse the random person should never be the same person
-            client.connect((ip_list[randomclient], port_list[randomclient]))
-            json_string = json.dumps(string)
-            client.send(json_string.encode('utf-8'))
-            client.close()
-            break
-        except:
-            continue
+class Peer_To_Peer:
+    def __init__(self) -> str:
+        self.my_ip = self.__get_real_ip__()
+        self.my_port = 6666 # static port
+        
+        self.ip_list = [self.my_ip]
+        self.port_list = [self.my_port]
+        
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind((self.my_ip, self.my_port))
+        self.server.listen()
+    
+    def __get_real_ip__(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        real_ip = s.getsockname()[0]
+        s.close()
+        return real_ip
+    
+    def dict_to_block(self,dictt) -> Block:
+        a_block = Block(dictt["index"],dictt["time_stamp"],dictt["sitting_number"],dictt["student_name"],dictt["subject"],dictt["data"],dictt["previous_hash"])
+        a_block.block["data"] = dictt["data"]
+        a_block.block["nonce"] = dictt["nonce"]
+        a_block.block["hash"] = dictt["hash"]
+        return a_block
+    
+    def broadcast_block(self,block): 
+        for i in range(1,len(self.ip_list)):
+            try:
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((self.ip_list[i], self.port_list[i]))
+                json_block_dict = json.dumps(block.block)
+                client.send(json_block_dict.encode('utf-8'))
+                client.close()
             
-def send_random_block(block): # sends a block to random person
-    while True:
-        try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            randomclient = random.randint(1,len(ip_list)-1) #should start at one becouse the random person should never be the same person
-            client.connect((ip_list[randomclient], port_list[randomclient]))
-            json_block_dict = json.dumps(block.block)
-            client.send(json_block_dict.encode('utf-8'))
-            client.close()
-            break
-        except:
-            continue
+            except:
+                pass
+    
+    def send_random_string(self,string): 
+        for i in range(0,30):
+            try:
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                randomclient = random.randint(1,len(self.ip_list)-1) #should start at one becouse the random person should never be the same person
+                client.connect((self.ip_list[randomclient], self.port_list[randomclient]))
+                json_string = json.dumps(string)
+                client.send(json_string.encode('utf-8'))
+                client.close()
+                break
+            except:
+                continue
+            
+    def send_random_block(self,block): # sends a block to random person
+        while True:
+            try:
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                randomclient = random.randint(1,len(self.ip_list)-1) #should start at one becouse the random person should never be the same person
+                client.connect((self.ip_list[randomclient], self.port_list[randomclient]))
+                json_block_dict = json.dumps(block.block)
+                client.send(json_block_dict.encode('utf-8'))
+                client.close()
+                break
+            except:
+                continue
+
+
+
+############# Initiating 2 Objects #############
+b1 = Block_Chain()
+network = Peer_To_Peer()
+
+
+
+
+
+
+############# Main program starts here 2 functions in Threading #############
 
 def receive():
     while True:
-        client, address = server.accept()
+        client, address = network.server.accept()
         somthing_sent = client.recv(1024)
         decoded_somthing = somthing_sent.decode()
         receved = json.loads(decoded_somthing)
         
         if type(receved) is dict:
-            receved_block = dict_to_block(receved)
+            receved_block = network.dict_to_block(receved)
             
             if receved_block.block["hash"][:4] != "0000":
                 minded_block = b1.__mine_block__(receved_block)
                 if minded_block.block["previous_hash"] == b1.Chain[-1].block["hash"]:
                     b1.__add_block_to_block_chain__(minded_block)
-                    broadcast_block(minded_block) #brodcast  the minded block
+                    network.broadcast_block(minded_block) #brodcast  the minded block
                     print("--> I was choosen at random to proof a block. I proofed the block and the block is broadcasted")
                 else:
                     print("--> I was choosen at random to proof the block but its previous hash does not match my previous hash")
@@ -198,7 +208,7 @@ def receive():
             if receved == "send latest":
                 new_list=[]
                 ip, _sent_port = address
-                index = ip_list.index(str(ip))
+                index = network.ip_list.index(str(ip))
                 for i in range(len(b1.Chain)):
                     block = b1.Chain[i]
                     dict_from_block = block.block
@@ -206,7 +216,7 @@ def receive():
                 
                 for k in range(1,len(new_list)): # start at one to not send the first block
                     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    client.connect((ip_list[index], port_list[index]))
+                    client.connect((network.ip_list[index], network.port_list[index]))
                     dictr = json.dumps(new_list[k])
                     client.send(dictr.encode('utf-8'))
                     client.close()
@@ -214,47 +224,45 @@ def receive():
             if receved[:10] == "j--network":
                 ip = receved[10:]
                 send = ("add" + ip)
-                for i in range(1,len(ip_list)):
+                for i in range(1,len(network.ip_list)):
                     try:
                         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        client.connect((ip_list[i], port_list[i]))
-                        json_block_dict = json.dumps(send)
-                        client.send(json_block_dict.encode('utf-8'))
+                        client.connect((network.ip_list[i], network.port_list[i]))
+                        json_sss = json.dumps(send)
+                        client.send(json_sss.encode('utf-8'))
                         client.close()
                     except:
                         pass
-                if str(ip) not in ip_list:
-                    ip_list.append(str(ip))
-                    port_list.append(6666)
+                if str(ip) not in network.ip_list:
+                    network.ip_list.append(str(ip))
+                    network.port_list.append(6666)
                 
-                lsend = ("l-add" + my_ip)
+                lsend = ("l-add" + network.my_ip)
                 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client.connect((ip,6666))
-                json_block_dict = json.dumps(lsend)
-                client.send(json_block_dict.encode('utf-8'))
+                json_lsend = json.dumps(lsend)
+                client.send(json_lsend.encode('utf-8'))
                 client.close()
                 
             
             if receved[:3] == "add":
                 ip = receved[3:]
-                if str(ip) not in ip_list:
-                    ip_list.append(str(ip))
-                    port_list.append(6666)
+                if str(ip) not in network.ip_list:
+                    network.ip_list.append(str(ip))
+                    network.port_list.append(6666)
                 
-                lsend = ("l-add" + my_ip)
+                lsend = ("l-add" + network.my_ip)
                 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client.connect((ip,6666))
-                json_block_dict = json.dumps(lsend)
-                client.send(json_block_dict.encode('utf-8'))
+                last_add = json.dumps(lsend)
+                client.send(last_add.encode('utf-8'))
                 client.close()
             
             if receved[:5] == "l-add":
                 ip = receved[5:]
-                if str(ip) not in ip_list:
-                    ip_list.append(str(ip))
-                    port_list.append(6666)
-
-
+                if str(ip) not in network.ip_list:
+                    network.ip_list.append(str(ip))
+                    network.port_list.append(6666)
 
 def menu():
     while True:
@@ -278,7 +286,7 @@ def menu():
             
             created_block = b1.__create_block__(one,two,three,four)
 
-            send_random_block(created_block)
+            network.send_random_block(created_block)
             print("--> Block created")
             print("--> your block is sent for proofing")
 
@@ -294,30 +302,29 @@ def menu():
             print(b1.get_block_by_sitting_number(setting_number_looking_for))
         
         if inputt == "join":
-            if len(ip_list) == 1:
+            if len(network.ip_list) == 1:
                 ip_input = str(input("Please enter an Ip of a node on the network: "))
-                j_send = ("j--network" + my_ip)
+                j_send = ("j--network" + network.my_ip)
                 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client.connect((ip_input,6666))
                 json_block_dict = json.dumps(j_send)
                 client.send(json_block_dict.encode('utf-8'))
                 client.close()
                 time.sleep(2) # Sleep for 2 seconds before geting last version of the block cahin
-                send_random_string("send latest")
-            if len(ip_list) > 1:
-                print("--> you are already on the network")
+                network.send_random_string("send latest")
+            if len(network.ip_list) > 1:
+                print("--> you are now on the network")
             
         if inputt == "peers":
-            print(ip_list)
+            print(network.ip_list)
         
         if inputt == "update":
-            send_random_string("send latest")
+            network.send_random_string("send latest")
 
         if inputt == "exit":
             break
 
 
-############# Threading #############
 
 receive_thread = threading.Thread(target=receive)
 receive_thread.start()
