@@ -183,14 +183,58 @@ class Peer_To_Peer:
                 continue
 
 
+class Node(object):
+    def __init__(self, value: int, next_node: "Node" = None):
+        self.value = value
+        self.next = next_node
 
+    def __repr__(self):
+        return "Node <{}>".format(self.value)
 
+class Queue(object):
+    def __init__(self):
+        self.head = None
+        self.tail = None
+
+    def enqueue(self, value: int) -> None:
+        new_node = Node(value)
+
+        if self.head is None:
+            self.head = new_node
+            self.tail = self.head
+            return
+
+        self.tail.next = new_node
+        self.tail = new_node 
+
+    def dequeue(self) -> int:
+        try:
+            value = self.head.value
+            self.head = self.head.next
+
+            if self.head is None:
+                self.tail = None
+
+            return value
+        except:
+            print("--> deque is empty")
+            pass
+
+    def is_empty(self):
+        return self.head is None
+    
+    def isnotEmpty(self):
+        if self.head is not None:
+            return True
+    
+    def first(self):
+        return self.head.value
 
 ############# Initiating 2 Objects #############
 
 b1 = Block_Chain()
 network = Peer_To_Peer()
-
+q1 = Queue()
 
 ############# Main program starts here 2 functions in Threading #############
 
@@ -203,26 +247,34 @@ def receive():
         
         if type(receved) is dict:
             receved_block = network.dict_to_block(receved)
-            
-            if receved_block.block["hash"][:4] != "0000":
-                minded_block = b1.__mine_block__(receved_block)
-                if minded_block.block["previous_hash"] == b1.Chain[-1].block["hash"]:
-                    b1.__add_block_to_block_chain__(minded_block)
-                    network.broadcast_block(minded_block) #brodcast  the minded block
-                    print("--> I was choosen at random to proof a block. I proofed the block and the block is broadcasted")
-                else:
-                    print("--> I was choosen at random to proof the block but its previous hash does not match my previous hash")
+            q1.enqueue(receved_block)
 
             
-            if receved_block.block["hash"][:4] == "0000":
-                if receved_block.block["previous_hash"] == b1.Chain[-1].block["hash"]:
-                    b1.__add_block_to_block_chain__(receved_block)
-                    print("--> I receved a minded block I compared the hash with the previos and added it")
-                else:
-                    print("--> I receved a minded block that does not match")
 
-            else:
-                print("--> An unknown eroor")
+            if q1.isnotEmpty():
+                if q1.first().block["hash"][:4] != "0000":
+                    minded_block = b1.__mine_block__(q1.first())
+                    if minded_block.block["previous_hash"] == b1.Chain[-1].block["hash"]:
+                        b1.__add_block_to_block_chain__(minded_block)
+                        network.broadcast_block(minded_block) #brodcast  the minded block
+                        print("--> I was choosen at random to proof a block. I proofed the block and the block is broadcasted")
+                        q1.dequeue()
+                    
+                    else:
+                        print("--> I was choosen at random to proof the block but its previous hash does not match my previous hash")
+                        q1.dequeue()
+                        
+            if q1.isnotEmpty():
+                if q1.first().block["hash"][:4] == "0000":
+                    if q1.first().block["previous_hash"] == b1.Chain[-1].block["hash"]:
+                        b1.__add_block_to_block_chain__(q1.first())
+                        print("--> I receved a minded block I compared the hash with the previos and added it")
+                        q1.dequeue()
+                    else:
+                        print("--> I receved a minded block that does not match")
+                        q1.dequeue()
+                    
+
         
         if type(receved) is str:
             if receved == "send latest":
