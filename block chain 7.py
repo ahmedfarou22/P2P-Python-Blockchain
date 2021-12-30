@@ -1,5 +1,5 @@
 import hashlib, datetime, json, socket, threading, random, time
-
+from cryptography.fernet import Fernet # used for symmetric encryption 
 
 ############# Block, BlockChain, And P2P Classes #############
 class Block:
@@ -56,8 +56,28 @@ class Block_Chain:
             if self.Chain[i].block["sitting_number"] == sitting_number:
                 return self.Chain[i]
         print("--> could not find the block associated with sitting number you searched for")
+        
+    def get_block_by_index(self,index : int) -> Block:
+        for i in range(len(self.Chain)):
+            if self.Chain[i].block["index"] == index:
+                return self.Chain[i]
+        print("--> could not find the block associated with sitting number you searched for")
+    
+    def encrypt_data(self,plain_data):
+        key = Fernet.generate_key()
+        x = key.decode()
+        print("--> this is the key of the block do not forget it: " + str(x))
+        f = Fernet(key)
+        encrypted_text = f.encrypt(bytes(plain_data, "UTF-8"))
+        return encrypted_text.decode()
 
 
+    def decrypt_data(self,encrypted_data):
+        key = input("please enter the key: ")
+        f = Fernet(key)
+        return f.decrypt(bytes(encrypted_data,"UTF-8")).decode()
+    
+    
     def __hash_function__(self,block) -> hash:
         header = str(block.block["index"]) + str(block.block["time_stamp"]) +str(block.block["sitting_number"]) +str(block.block["student_name"]) +str(block.block["subject"]) + str(block.block["data"])  + str(block.block["previous_hash"]) + str(block.block["nonce"])
         inner_hash = hashlib.sha256(header.encode()).hexdigest().encode()
@@ -65,7 +85,7 @@ class Block_Chain:
         return outer_hash
     
     def __create_block__(self,sitting_number,student_name,subject,data) -> Block:
-        new_block = Block(str(len(self.Chain)+1),datetime.datetime.now(),str(sitting_number),str(student_name),str(subject),str(data),self.Chain[-1].block["hash"])
+        new_block = Block(str(len(self.Chain)+1),datetime.datetime.now(),str(sitting_number),str(student_name),str(subject),self.encrypt_data(data),self.Chain[-1].block["hash"])
         
         new_block.block["hash"] = self.__hash_function__(new_block)
         
@@ -92,10 +112,11 @@ class Block_Chain:
         else:
             print("your block is not mined or incorrect")
             
-    def __create_mine_add__(self,sitting_number,student_name,subject,data) -> None:
-        a = self.__create_block__(sitting_number,student_name,subject,data)
-        b = self.__mine_block__(a)
-        self.__add_block_to_block_chain__(b)
+    # def __create_mine_add__(self,sitting_number,student_name,subject,data) -> None: # for testing only 
+    #     a = self.__create_block__(sitting_number,student_name,subject,data)
+    #     b = self.__mine_block__(a)
+    #     self.__add_block_to_block_chain__(b)
+
 
 class Peer_To_Peer:
     def __init__(self) -> str:
@@ -124,10 +145,10 @@ class Peer_To_Peer:
         return a_block
     
     def broadcast_block(self,block): 
-        for i in range(1,len(self.ip_list)):
+        for q in range(1,len(self.ip_list)):
             try:
                 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client.connect((self.ip_list[i], self.port_list[i]))
+                client.connect((self.ip_list[q], self.port_list[q]))
                 json_block_dict = json.dumps(block.block)
                 client.send(json_block_dict.encode('utf-8'))
                 client.close()
@@ -163,13 +184,12 @@ class Peer_To_Peer:
 
 
 
+
+
 ############# Initiating 2 Objects #############
+
 b1 = Block_Chain()
 network = Peer_To_Peer()
-
-
-
-
 
 
 ############# Main program starts here 2 functions in Threading #############
@@ -271,19 +291,20 @@ def menu():
         print("2.type see    --> to see the curent version of blockcahin you have")
         print("3.type search name --> to search the block chain by name")
         print("3.type search number --> to search the block chain by sitting number")
-        print("4.type join --> to join the P2P network")
-        print("4.type peers --> to see all the peers on the network")
-        print("5.type update --> to update your block chain")
-        print("6.type exit  --> to exit the program")
+        print("4.type search index --> to search the block chain by index")
+        print("5.type full data  --> to previw the data of a block on the block chain")
+        print("6.type join --> to join the P2P network")
+        print("7.type peers --> to see all the peers on the network")
+        print("8.type update --> to update your block chain")
+        print("9.type exit  --> to exit the program")
         inputt = input("What whould you like to do : \n")
-        
+
         if inputt == "create":
             print("Please add information to the block : ")
             one =  str(input("What is the student's sitting number : "))
             two =  str(input("What is the student's name : "))
             three =  str(input("What is the subject : "))
-            four= str(input("What is the please atatch the test : "))
-            
+            four = str(input("please atatch the test : "))
             created_block = b1.__create_block__(one,two,three,four)
 
             network.send_random_block(created_block)
@@ -298,8 +319,18 @@ def menu():
             print(b1.get_block_by_name(name_looking_for))
 
         if inputt == "search number":
-            setting_number_looking_for = str(input("Please enter the name of the student you are looking for: "))
+            setting_number_looking_for = str(input("Please enter the sitting number of the student you are looking for: "))
             print(b1.get_block_by_sitting_number(setting_number_looking_for))
+        
+        if inputt == "search index":
+            index_looking_for = int(input("Please enter the index of the student you are looking for: "))
+            print(b1.get_block_by_index(index_looking_for))
+        
+        if inputt == "full data":
+            block_index = int(input("What is the index of the block"))
+            got_block = b1.get_block_by_index(block_index)
+            dat_of_wanted_block = got_block.block["data"]
+            print("Decrypted data: " + b1.decrypt_data(dat_of_wanted_block))
         
         if inputt == "join":
             if len(network.ip_list) == 1:
