@@ -1,4 +1,5 @@
 import hashlib, datetime, json, socket, threading, random, time
+
 from cryptography.fernet import Fernet # used for symmetric encryption 
 
 ############# Block, BlockChain, And P2P Classes #############
@@ -57,11 +58,30 @@ class Block_Chain:
                 return self.Chain[i]
         print("--> could not find the block associated with sitting number you searched for")
         
-    def get_block_by_index(self,index : int) -> Block:
-        for i in range(len(self.Chain)):
-            if self.Chain[i].block["index"] == index:
-                return self.Chain[i]
-        print("--> could not find the block associated with sitting number you searched for")
+        
+    def binarySearch(self,arr, l, r, x):
+        # Check base case
+        if r >= l:
+    
+            mid = l + (r - l) // 2
+    
+            # If element is present at the middle itself
+            if arr[mid].block["index"] == x:
+                return mid
+    
+            # If element is smaller than mid, then it
+            # can only be present in left subarray
+            elif arr[mid].block["index"] > x:
+                return self.binarySearch(arr, l, mid-1, x)
+    
+            # Else the element can only be present
+            # in right subarray
+            else:
+                return self.binarySearch(arr, mid + 1, r, x)
+    
+        else:
+            # Element is not present in the array
+            return -1
     
     def encrypt_data(self,plain_data):
         key = Fernet.generate_key()
@@ -375,14 +395,15 @@ def menu():
             print(b1.get_block_by_sitting_number(setting_number_looking_for))
         
         if inputt == "search index":
-            index_looking_for = int(input("Please enter the index of the student you are looking for: "))
-            print(b1.get_block_by_index(index_looking_for))
+            index_looking_for = int(input("Please enter the index of the block you are looking for: "))
+            index_of_block_Chain = b1.binarySearch(b1.Chain, 0, len(b1.Chain) -1 , index_looking_for)
+            print(b1.Chain[index_of_block_Chain])
         
         if inputt == "full data":
-            block_index = int(input("What is the index of the block"))
-            got_block = b1.get_block_by_index(block_index)
-            dat_of_wanted_block = got_block.block["data"]
-            print("Decrypted data: " + b1.decrypt_data(dat_of_wanted_block))
+            index_looking_for = int(input("Please enter the index of the block you are looking for: "))
+            index_of_block_Chain = b1.binarySearch(b1.Chain, 0, len(b1.Chain) -1 , index_looking_for)
+            blokaya = b1.Chain[index_of_block_Chain]
+            print("Decrypted Data: " + b1.decrypt_data(blokaya.block["data"]))
         
         if inputt == "join":
             if len(network.ip_list) == 1:
