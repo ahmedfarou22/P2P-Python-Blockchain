@@ -1,7 +1,162 @@
 import hashlib, datetime, json, socket, threading, random, time # built in libraries needed for this program to work
 from cryptography.fernet import Fernet # used for symmetric encryption 
 
+
+# for gui #######
+from tkinter.constants import END, TRUE
+import tkinter as tk
+import tkinter.font as tkFont
+
 ############# Block, BlockChain, And P2P Classes #############
+
+
+class App:
+    def __init__(self, root):
+        #setting title
+        root.title("undefined")
+        #setting window size
+        width=640
+        height=526
+        screenwidth = root.winfo_screenwidth()
+        screenheight = root.winfo_screenheight()
+        alignstr = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
+        root.geometry(alignstr)
+        root.resizable(width=False, height=False)
+        self.textBox = tk.Text(root)
+        self.textBox["borderwidth"] = "1px"
+        ft = tkFont.Font(family="Times", size=10)
+        self.textBox["font"] = ft
+        self.textBox["fg"] = "#333333"
+        self.textBox.place(x=10,y=270,width=620,height=250)
+        self.textBox.tag_config("warning", background="#fffa65", selectbackground="black")
+        self.textBox.tag_config("error", background="#e74c3c", selectbackground="black")
+        self.textBox.tag_config("control", background="#2ecc71", selectbackground="black")
+        self.textBox.tag_config("basic", background="white", selectbackground="black")
+
+        GLabel_549=tk.Label(root)
+        ft = tkFont.Font(family='Times',size=28)
+        GLabel_549["font"] = ft
+        GLabel_549["fg"] = "#333333"
+        GLabel_549["justify"] = "center"
+        GLabel_549["text"] = "Network Settings"
+        GLabel_549.place(x=170,y=20,width=281,height=30)
+
+        GButton_499=tk.Button(root)
+        GButton_499["bg"] = "#efefef"
+        ft = tkFont.Font(family='Times',size=10)
+        GButton_499["font"] = ft
+        GButton_499["fg"] = "#000000"
+        GButton_499["justify"] = "center"
+        GButton_499["text"] = "View All peers"
+        GButton_499.place(x=50,y=80,width=136,height=57)
+        GButton_499["command"] = self.GButton_499_command
+
+        GButton_575=tk.Button(root)
+        GButton_575["bg"] = "#efefef"
+        ft = tkFont.Font(family='Times',size=10)
+        GButton_575["font"] = ft
+        GButton_575["fg"] = "#000000"
+        GButton_575["justify"] = "center"
+        GButton_575["text"] = "View Block chain"
+        GButton_575.place(x=260,y=80,width=136,height=57)
+        GButton_575["command"] = self.GButton_575_command
+
+        GButton_363=tk.Button(root)
+        GButton_363["bg"] = "#efefef"
+        ft = tkFont.Font(family='Times',size=10)
+        GButton_363["font"] = ft
+        GButton_363["fg"] = "#000000"
+        GButton_363["justify"] = "center"
+        GButton_363["text"] = "Update Block chain"
+        GButton_363.place(x=480,y=80,width=137,height=57)
+        GButton_363["command"] = self.GButton_363_command
+
+        self.GLineEdit_248=tk.Entry(root)
+        self.GLineEdit_248["borderwidth"] = "1px"
+        self.ft = tkFont.Font(family='Times',size=10)
+        self.GLineEdit_248["font"] = ft
+        self.GLineEdit_248["fg"] = "#333333"
+        self.GLineEdit_248["justify"] = "left"
+        self.GLineEdit_248["text"] = "Entry"
+        self.GLineEdit_248.place(x=80,y=190,width=277,height=33)
+
+        GButton_175=tk.Button(root)
+        GButton_175["bg"] = "#efefef"
+        ft = tkFont.Font(family='Times',size=10)
+        GButton_175["font"] = ft
+        GButton_175["fg"] = "#000000"
+        GButton_175["justify"] = "center"
+        GButton_175["text"] = "Join the network"
+        GButton_175.place(x=390,y=170,width=175,height=55)
+        GButton_175["command"] = self.GButton_175_command
+
+        GLabel_470=tk.Label(root)
+        ft = tkFont.Font(family='Times',size=10)
+        GLabel_470["font"] = ft
+        GLabel_470["fg"] = "#333333"
+        GLabel_470["justify"] = "center"
+        GLabel_470["text"] = "Please enter an Ip address of a node on the network"
+        GLabel_470.place(x=30,y=160,width=354,height=30)
+        
+        GLabel_393=tk.Label(root)
+        ft = tkFont.Font(family='Times',size=18)
+        GLabel_393["font"] = ft
+        GLabel_393["fg"] = "#333333"
+        GLabel_393["justify"] = "center"
+        GLabel_393["text"] = "Messages"
+        GLabel_393.place(x=10,y=230,width=122,height=30)
+        
+
+    def print_to_GUI(self, msg, type="basic"):
+        self.textBox.configure(state="normal")
+        autoscroll = False
+        if self.textBox.yview()[1] == 1:
+            autoscroll = True
+        self.textBox.insert(END, ">>> " +  str(msg) + "\n", str(type) + "\n")
+        if autoscroll:
+            self.textBox.see(END)
+        self.textBox.configure(state="disabled")
+    
+    def GButton_499_command(self): # view all peers
+        self.print_to_GUI(network.ip_list)
+
+
+    def GButton_575_command(self): # view block chain
+        for i in range(len(b1.Chain)):
+            temp = json.dumps(b1.Chain[i].block)
+            self.print_to_GUI(temp)
+
+
+    def GButton_363_command(self): #Update Block chain
+        network.send_random_string("send latest")
+        self.print_to_GUI("Voting in progress")
+        self.print_to_GUI("Voting process compleate you now have the latest version of the block chain")
+
+
+
+    def GButton_175_command(self): # Join the network
+        gui_ip = self.GLineEdit_248.get()
+        if gui_ip == "":
+            self.print_to_GUI("you did not enter an IP")
+        
+        else:
+            try:
+                if len(network.ip_list) == 1:
+                    ip_input = gui_ip
+                    j_send = ("j--network" + network.my_ip)
+                    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    client.connect((ip_input,6666))
+                    json_block_dict = json.dumps(j_send)
+                    client.send(json_block_dict.encode('utf-8'))
+                    client.close()
+                    time.sleep(2) # Sleep for 2 seconds before geting last version of the block cahin
+                    network.send_random_string("send latest")
+                if len(network.ip_list) > 1:
+                    self.print_to_GUI(" you are now on the network")
+            except:
+                self.print_to_GUI('Please enter an ip of a active node other than your node')
+         
+            
 class Block:
     """This class creates block objects evey block contains 9 fields"""
     def __init__(self,index,time_stamp,sitting_number,student_name,subject,data,previous_hash) -> None:
@@ -76,13 +231,15 @@ class Block_Chain:
             else: # Else the element can only be present
                 return self.binarySearch(arr, mid + 1, r, x)  # in right subarray
         else:
-            print("--> index not found on the block chain")   # Element is not present in the array
+            print("--> index not found on the block chain")# Element is not present in the array
+            return "not found"
     
     """Function that genrates a random key and encrypts data using it --> (symmetric encryption)"""
     def encrypt_data(self,plain_data):
         key = Fernet.generate_key() # genrate a random key
         x = key.decode() # the key is genrated in bytes format I used the decode function to store the key in string format in the var X
         print("--> this is the key of the block do not forget it: " + str(x)) # print the private key to the user 
+        a1.print_to_GUI("this is the key of the block do not forget it: " + str(x))
         f = Fernet(key) # 
         encrypted_text = f.encrypt(bytes(plain_data, "UTF-8")) # encrypt the plane data and return the decoded version of it
         return encrypted_text.decode()
@@ -90,9 +247,12 @@ class Block_Chain:
     """Function that takes en encrypted data and decrypts it using a private key entered by the user"""
     def decrypt_data(self,encrypted_data): 
         key = input("please enter the key: ") # take the private key from the user and store it in the var key
-        f = Fernet(key) 
-        return f.decrypt(bytes(encrypted_data,"UTF-8")).decode() # decrypte the data using the private key passed above
-    
+        try:
+            f = Fernet(key) 
+            return f.decrypt(bytes(encrypted_data,"UTF-8")).decode() # decrypte the data using the private key passed above
+        except:
+            print("--> sorry the private key does not match")
+            
     """This function usesed to hash a block on 2 levels inner hash and outer hash"""
     def __hash_function__(self,block) -> hash:
         header = str(block.block["index"]) + str(block.block["time_stamp"]) +str(block.block["sitting_number"]) +str(block.block["student_name"]) +str(block.block["subject"]) + str(block.block["data"])  + str(block.block["previous_hash"]) + str(block.block["nonce"])
@@ -127,11 +287,13 @@ class Block_Chain:
             if block_to_add.block["previous_hash"] == self.__last_block__().block["hash"]: #condition 2 the previous hash of the new block must be the same as the hash of the last block
                 self.Chain.append(block_to_add) # if the 2 conditions are satisfied append the new block to the chain
             else:
-                print("the block's previous hash is incorrect or not mined properly")
+                print("--> the block's previous hash is incorrect or not mined properly")
+                a1.print_to_GUI(" the block's previous hash is incorrect or not mined properly")
             
         else:
-            print("your block is not mined or incorrect")
-            
+            print("--> your block is not mined or incorrect")
+            a1.print_to_GUI(" your block is not mined or incorrect")
+
 
 class Peer_To_Peer:
     """
@@ -274,6 +436,8 @@ b1 = Block_Chain()
 network = Peer_To_Peer()
 q1 = Queue()
 
+root = tk.Tk()
+a1 = App(root)
 ############# Main program starts here 2 functions in Threading #############
 
 def receive():
@@ -296,10 +460,12 @@ def receive():
                         b1.__add_block_to_block_chain__(minded_block)
                         network.broadcast_block(minded_block) #brodcast  the minded block
                         print("--> I was choosen at random to proof a block. I proofed the block and the block is broadcasted")
+                        a1.print_to_GUI(" I was choosen at random to proof a block. I proofed the block and the block is broadcasted")
                         q1.dequeue()
                     
                     else:
                         print("--> I was choosen at random to proof the block but its previous hash does not match my previous hash")
+                        a1.print_to_GUI("was choosen at random to proof the block but its previous hash does not match my previous hash")
                         q1.dequeue()
                         
             if q1.isnotEmpty():
@@ -307,9 +473,11 @@ def receive():
                     if q1.first().block["previous_hash"] == b1.Chain[-1].block["hash"]:
                         b1.__add_block_to_block_chain__(q1.first())
                         print("--> I receved a minded block I compared the hash with the previos and added it")
+                        a1.print_to_GUI(" I receved a minded block I compared the hash with the previos and added it")
                         q1.dequeue()
                     else:
                         print("--> I receved a minded block that does not match")
+                        a1.print_to_GUI(" I receved a minded block that does not match")
                         q1.dequeue()
                     
 
@@ -390,16 +558,23 @@ def menu():
         inputt = input("What whould you like to do : \n")
 
         if inputt == "create":
-            print("Please add information to the block : ")
-            one =  str(input("What is the student's sitting number : "))
-            two =  str(input("What is the student's name : "))
-            three =  str(input("What is the subject : "))
-            four = str(input("please atatch the test : "))
-            created_block = b1.__create_block__(one,two,three,four)
+            if len(network.ip_list) == 1:
+                print("--> You are the only node on the network. To create a block there must be atleast 2 active nodes")
+                print("--> to join a node type join then type the ip address of any other node")
+            
+            else:
+                print("Please add information to the block : ")
+                one =  str(input("What is the student's sitting number : "))
+                two =  str(input("What is the student's name : "))
+                three =  str(input("What is the subject : "))
+                four = str(input("please atatch the test : "))
+                created_block = b1.__create_block__(one,two,three,four)
 
-            network.send_random_block(created_block)
-            print("--> Block created")
-            print("--> your block is sent for proofing")
+                network.send_random_block(created_block)
+                print("--> Block created")
+                a1.print_to_GUI(" Block created")
+                print("--> your block is sent for proofing")
+                a1.print_to_GUI(" your block is sent for proofing")
 
         elif inputt == "see":
             print(b1)
@@ -413,27 +588,50 @@ def menu():
             print(b1.get_block_by_sitting_number(setting_number_looking_for))
         
         if inputt == "search index":
-            index_looking_for = int(input("Please enter the index of the block you are looking for: "))
-            index_of_block_Chain = b1.binarySearch(b1.Chain, 0, len(b1.Chain) -1 , index_looking_for)
-            print(b1.Chain[index_of_block_Chain])
+            try:
+                index_looking_for = int(input("Please enter the index of the block you are looking for: "))
+                
+                index_of_block_Chain = b1.binarySearch(b1.Chain, 0, len(b1.Chain) -1 , index_looking_for)
+                if index_of_block_Chain != "not found":
+                    print(b1.Chain[index_of_block_Chain])
+            
+            except:
+                print ("--> sorry I did not understad that" )
         
         if inputt == "full data":
-            index_looking_for = int(input("Please enter the index of the block you are looking for: "))
-            index_of_block_Chain = b1.binarySearch(b1.Chain, 0, len(b1.Chain) -1 , index_looking_for)
-            blokaya = b1.Chain[index_of_block_Chain]
-            print("Decrypted Data: " + b1.decrypt_data(blokaya.block["data"]))
+            try:
+                index_looking_for = int(input("Please enter the index of the block you are looking for: "))
+
+                index_of_block_Chain = b1.binarySearch(b1.Chain, 0, len(b1.Chain) -1 , index_looking_for)            
+                if index_of_block_Chain != "not found":       
+                    blokaya = b1.Chain[index_of_block_Chain]
+                    print("Decrypted Data: " + b1.decrypt_data(blokaya.block["data"]))
+                    for_gui = b1.decrypt_data(blokaya.block["data"])
+                    a1.print_to_GUI(" Decrypted Data: " + str(for_gui))
+            except:
+                print("--> sorry I did not understad that")
+        
         
         if inputt == "join":
             if len(network.ip_list) == 1:
-                ip_input = str(input("Please enter an Ip of a node on the network: "))
-                j_send = ("j--network" + network.my_ip)
-                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client.connect((ip_input,6666))
-                json_block_dict = json.dumps(j_send)
-                client.send(json_block_dict.encode('utf-8'))
-                client.close()
-                time.sleep(2) # Sleep for 2 seconds before geting last version of the block cahin
-                network.send_random_string("send latest")
+                try:
+                    ip_input = str(input("Please enter an Ip of a node on the network: "))
+                    if ip_input == network.ip_list[0]:
+                        print("--> Please enter an ip of a active node other than your node")
+                        a1.print_to_GUI("Please enter an ip of a active node other than your node")
+                    
+                    else:
+                        j_send = ("j--network" + network.my_ip)
+                        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        client.connect((ip_input,6666))
+                        json_block_dict = json.dumps(j_send)
+                        client.send(json_block_dict.encode('utf-8'))
+                        client.close()
+                        time.sleep(2) # Sleep for 2 seconds before geting last version of the block cahin
+                        network.send_random_string("send latest")
+                except:
+                    print("--> Please enter a valied ip of an active node")
+                
             if len(network.ip_list) > 1:
                 print("--> you are now on the network")
             
@@ -447,8 +645,15 @@ def menu():
             break
 
 
+
+
+
 receive_thread = threading.Thread(target=receive)
 receive_thread.start()
 
 menu_thread = threading.Thread(target=menu)
 menu_thread.start()
+
+
+root.mainloop()
+
