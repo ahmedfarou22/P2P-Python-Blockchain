@@ -1,11 +1,11 @@
-import hashlib, datetime, json, socket, threading, random, time
-
+import hashlib, datetime, json, socket, threading, random, time # built in libraries needed for this program to work
 from cryptography.fernet import Fernet # used for symmetric encryption 
 
 ############# Block, BlockChain, And P2P Classes #############
 class Block:
+    """This class creates block objects evey block contains 9 fields"""
     def __init__(self,index,time_stamp,sitting_number,student_name,subject,data,previous_hash) -> None:
-        self.index = index
+        self.index = index 
         self.time_stamp = time_stamp
         self.sitting_number = sitting_number
         self.student_name = student_name
@@ -14,181 +14,193 @@ class Block:
         self.previous_hash = previous_hash
         
         self.block = {
-            "index":int(self.index),
-            "time_stamp":str(self.time_stamp),
-            "sitting_number":str(self.sitting_number),
-            "student_name":str(self.student_name),
-            "subject":str(subject),
+            "index":int(self.index), # index used for searching and makes sure evey block has a diffrent hash 
+            "time_stamp":str(self.time_stamp), # takes in the time the block was created in
+            "sitting_number":str(self.sitting_number), # the sitting number of the student also used for searching
+            "student_name":str(self.student_name), # the name of student asosiated with this block
+            "subject":str(subject), # the subject that the student took
             
-            "data":str(self.data),
+            "data":str(self.data), # the real data of the exam (this part will be encrypted)
             
-            "previous_hash":str(self.previous_hash),
-            "nonce": 0,
-            "hash":str("")    
+            "previous_hash":str(self.previous_hash), # takes in the hash of the previous block
+            "nonce": 0, # this is used for the minning process and always starts at one
+            "hash":str("") # the hash of the entire fields above
             }
     
-    def __str__(self) -> str:
-        return str(self.block)
+    def __str__(self) -> str: # edited the __str__ function to be able to print the block
+        return str(self.block)  # return the string version of the block
 
 class Block_Chain:
+    """This Class has all the main functions to create the block chain"""
     def __init__(self) -> str:
-        self.Chain = []
-        first_block = Block(1,"0000-00-00 00:00:00.000000","00","00","00","0","0000000000000000000000000000000000000000000000000000000000000000")
-        first_block.block["hash"] = self.__hash_function__(first_block)
-        self.__mine_block__(first_block)
-        self.Chain.append(first_block)
+        self.Chain = [] # the main list where i will store all the block objects
+        first_block = Block(1,"0000-00-00 00:00:00.000000","00","00","00","0","0000000000000000000000000000000000000000000000000000000000000000") # created the genices block and passed static values to it
+        first_block.block["hash"] = self.__hash_function__(first_block) # hashed all the data given above and saved the hash in the hash field of the block object
+        self.__mine_block__(first_block) # minned the first block 
+        self.Chain.append(first_block) # added the first block to the block chain
     
-    def __str__(self) -> str:
-        for i in range(len(self.Chain)):
-            print(str(self.Chain[i]))
-        return str("")
+    """Used to print out the entire block chain"""
+    def __str__(self) -> str: # used to be able to print the entire block chain 
+        for i in range(len(self.Chain)): # loop over all the blocks in the block chain list 
+            print(str(self.Chain[i])) # print every block one at a time
+        return str("") # since the str function must return a string I returned an empty string
     
+    """Returns the last block on the block chain"""
     def __last_block__(self) -> Block:
-        return self.Chain[-1]
+        return self.Chain[-1] # to do this I called the main list at index -1
     
-    def get_block_by_name(self,name : str) -> Block:
-        for i in range(len(self.Chain)):
-            if self.Chain[i].block["student_name"] == name:
-                return self.Chain[i]
-        print("--> could not find the block associated with name you searched for")
+    """Normal O(N) searching algorithm """
+    def get_block_by_name(self,name : str) -> Block: # the function takes the name of the student as the argument
+        for i in range(len(self.Chain)):  #loop over the main list 
+            if self.Chain[i].block["student_name"] == name: # cheak if the name supplied matches the name on the block
+                return self.Chain[i] #if yes return that block
+        print("--> could not find the block associated with name you searched for") # if it is not found print could not find index
 
-    def get_block_by_sitting_number(self,sitting_number : str) -> Block:
-        for i in range(len(self.Chain)):
-            if self.Chain[i].block["sitting_number"] == sitting_number:
-                return self.Chain[i]
-        print("--> could not find the block associated with sitting number you searched for")
+
+    """Normal O(N) searching algorithm """
+    def get_block_by_sitting_number(self,sitting_number : str) -> Block:  # the function takes the sitting number of the student as the argument
+        for i in range(len(self.Chain)): #loop over the main list 
+            if self.Chain[i].block["sitting_number"] == sitting_number: #cheak if the sitting number supplied matches the sitting number on the block
+                return self.Chain[i] # if yes return that block
+        print("--> could not find the block associated with sitting number you searched for")  # if it is not found print could not find the block
         
-        
+    """Since all the blocks have index and all the blocks are sorted. I used binary search"""    
     def binarySearch(self,arr, l, r, x):
-        # Check base case
-        if r >= l:
-    
+        if r >= l:         # Check base case
             mid = l + (r - l) // 2
-    
-            # If element is present at the middle itself
-            if arr[mid].block["index"] == x:
+            if arr[mid].block["index"] == x: # If element is present at the middle itself
                 return mid
-    
-            # If element is smaller than mid, then it
-            # can only be present in left subarray
-            elif arr[mid].block["index"] > x:
+            elif arr[mid].block["index"] > x: # If element is smaller than mid, then it can only be present in left subarray
                 return self.binarySearch(arr, l, mid-1, x)
-    
-            # Else the element can only be present
-            # in right subarray
-            else:
-                return self.binarySearch(arr, mid + 1, r, x)
-    
+
+            else: # Else the element can only be present
+                return self.binarySearch(arr, mid + 1, r, x)  # in right subarray
         else:
-            # Element is not present in the array
-            return -1
+            print("--> index not found on the block chain")   # Element is not present in the array
     
+    """Function that genrates a random key and encrypts data using it --> (symmetric encryption)"""
     def encrypt_data(self,plain_data):
-        key = Fernet.generate_key()
-        x = key.decode()
-        print("--> this is the key of the block do not forget it: " + str(x))
-        f = Fernet(key)
-        encrypted_text = f.encrypt(bytes(plain_data, "UTF-8"))
+        key = Fernet.generate_key() # genrate a random key
+        x = key.decode() # the key is genrated in bytes format I used the decode function to store the key in string format in the var X
+        print("--> this is the key of the block do not forget it: " + str(x)) # print the private key to the user 
+        f = Fernet(key) # 
+        encrypted_text = f.encrypt(bytes(plain_data, "UTF-8")) # encrypt the plane data and return the decoded version of it
         return encrypted_text.decode()
-
-
-    def decrypt_data(self,encrypted_data):
-        key = input("please enter the key: ")
-        f = Fernet(key)
-        return f.decrypt(bytes(encrypted_data,"UTF-8")).decode()
     
+    """Function that takes en encrypted data and decrypts it using a private key entered by the user"""
+    def decrypt_data(self,encrypted_data): 
+        key = input("please enter the key: ") # take the private key from the user and store it in the var key
+        f = Fernet(key) 
+        return f.decrypt(bytes(encrypted_data,"UTF-8")).decode() # decrypte the data using the private key passed above
     
+    """This function usesed to hash a block on 2 levels inner hash and outer hash"""
     def __hash_function__(self,block) -> hash:
         header = str(block.block["index"]) + str(block.block["time_stamp"]) +str(block.block["sitting_number"]) +str(block.block["student_name"]) +str(block.block["subject"]) + str(block.block["data"])  + str(block.block["previous_hash"]) + str(block.block["nonce"])
-        inner_hash = hashlib.sha256(header.encode()).hexdigest().encode()
-        outer_hash = hashlib.sha256(inner_hash).hexdigest()
-        return outer_hash
+        inner_hash = hashlib.sha256(header.encode()).hexdigest().encode() # got all the data in string format from the block passed and asigned it to the header and hashed all of it
+        outer_hash = hashlib.sha256(inner_hash).hexdigest() # hashed the inner hash just to make sure it is uniqe 
+        return outer_hash # return the outer hash
     
+    """The main function that allows users to create blocks"""
     def __create_block__(self,sitting_number,student_name,subject,data) -> Block:
+        # created a new var named new_block and created a block object and passed all the needed info to the block note: the data section is passed threw the encryption function first
         new_block = Block(str(len(self.Chain)+1),datetime.datetime.now(),str(sitting_number),str(student_name),str(subject),self.encrypt_data(data),self.Chain[-1].block["hash"])
         
-        new_block.block["hash"] = self.__hash_function__(new_block)
+        new_block.block["hash"] = self.__hash_function__(new_block) # add the hash to the block 
         
-        return new_block
+        return new_block # return the block with all the info + encrypted data + it's hash
     
+    
+    """This Function allows for minning minning is the process of making sure that the block is valied to be appended on the main chain a mined block will have its hash start with 0000"""
     def __mine_block__(self,block_to_mine) -> Block:
-        
-        while block_to_mine.block["hash"][:4] != "0000":
+        while block_to_mine.block["hash"][:4] != "0000": # a while loop that makes allways runs untill the hash start with 0000
             
-            block_to_mine.block["nonce"] += 1
-            block_to_mine.block["hash"] =  self.__hash_function__(block_to_mine)
+            block_to_mine.block["nonce"] += 1 # add one to the nonce 
+            block_to_mine.block["hash"] =  self.__hash_function__(block_to_mine) # re hash the new block and cheak again
             
-        return block_to_mine
+        return block_to_mine # to break out of the loop above a block will be hashed then we can return it 
     
+    
+    """Function that addes blocks to the block chain on 2 conditions (must be mined -0000-) and the previous hash is corect"""
     def __add_block_to_block_chain__(self,block_to_add) -> None:
         block_to_add_hash = block_to_add.block["hash"]
-        
-        if block_to_add_hash [:4] == "0000":
-            if block_to_add.block["previous_hash"] == self.__last_block__().block["hash"]:
-                self.Chain.append(block_to_add)
+        if block_to_add_hash [:4] == "0000": # condition 1 the block must be hashed
+            if block_to_add.block["previous_hash"] == self.__last_block__().block["hash"]: #condition 2 the previous hash of the new block must be the same as the hash of the last block
+                self.Chain.append(block_to_add) # if the 2 conditions are satisfied append the new block to the chain
             else:
                 print("the block's previous hash is incorrect or not mined properly")
             
         else:
             print("your block is not mined or incorrect")
             
-    # def __create_mine_add__(self,sitting_number,student_name,subject,data) -> None: # for testing only 
-    #     a = self.__create_block__(sitting_number,student_name,subject,data)
-    #     b = self.__mine_block__(a)
-    #     self.__add_block_to_block_chain__(b)
-
 
 class Peer_To_Peer:
+    """
+    This class is responsible for the peer to peer conections. the concept behinde it is that every simple. every node 
+    runing this file will create
+    1. server socket using an ip and a port # Server part
+    2. client socket that will connect to a server socket depending on whitch node it wants to comunicate with 
+    every node must have (IP, Port --> to create a server) (a list of IP, a list of ports --> for all the nodes)
+    """
     def __init__(self) -> str:
-        self.my_ip = self.__get_real_ip__()
-        self.my_port = 6666 # static port
+        self.my_ip = self.__get_real_ip__() # a function that get the real ip of the device
+        self.my_port = 6666 # every server socket will use this port
         
-        self.ip_list = [self.my_ip]
-        self.port_list = [self.my_port]
+        self.ip_list = [self.my_ip] # the list of all ips on the network
+        self.port_list = [self.my_port] # the list of all ports on the network
         
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((self.my_ip, self.my_port))
-        self.server.listen()
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # create a server socket
+        self.server.bind((self.my_ip, self.my_port)) #bined the real Ip to the static port 
+        self.server.listen() # start the lisining function on the server socket
     
-    def __get_real_ip__(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        real_ip = s.getsockname()[0]
-        s.close()
-        return real_ip
+    
+    """A function that get the real Ip of the device by connecting to google and saving the ip in a var"""
+    def __get_real_ip__(self): 
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # start a socket
+        s.connect(("8.8.8.8", 80)) # connect the socket to google as an http request 
+        real_ip = s.getsockname()[0] # save the given real ip in a var named real_ip
+        s.close() # close the connection with google
+        return real_ip # return the real ip
+    
+    """A very important function that takes in a dictionary and returns a block object from this dictionary"""
     
     def dict_to_block(self,dictt) -> Block:
-        a_block = Block(dictt["index"],dictt["time_stamp"],dictt["sitting_number"],dictt["student_name"],dictt["subject"],dictt["data"],dictt["previous_hash"])
-        a_block.block["data"] = dictt["data"]
+        a_block = Block(dictt["index"],dictt["time_stamp"],dictt["sitting_number"],dictt["student_name"],dictt["subject"],dictt["data"],dictt["previous_hash"]) # create a block object and pass the main arguments to it from the dict
+        a_block.block["data"] = dictt["data"] # pass the remaining
         a_block.block["nonce"] = dictt["nonce"]
         a_block.block["hash"] = dictt["hash"]
-        return a_block
+        return a_block # return the block object 
     
+    
+    """a dunction that takes one block and sends it to all  nodes on the network"""
     def broadcast_block(self,block): 
-        for q in range(1,len(self.ip_list)):
+        for q in range(1,len(self.ip_list)): # loop over the list of ip starting at index one becouse index 0 has this nodes ip and we do not want to create a broadcast storm
             try:
-                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client.connect((self.ip_list[q], self.port_list[q]))
-                json_block_dict = json.dumps(block.block)
-                client.send(json_block_dict.encode('utf-8'))
-                client.close()
-            
-            except:
-                pass
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # create a socket 
+                client.connect((self.ip_list[q], self.port_list[q])) # connect to a peer using his ip and port from list of ips and ports
+                json_block_dict = json.dumps(block.block) # dump the dictionary in the block object to a json file
+                client.send(json_block_dict.encode('utf-8')) # encode the json file and send it 
+                client.close() # close the connection
     
+            except: # since not all nodes have to be active this can cause an error 
+                pass # so if an error happens just keep pass the error 
+    
+    
+    """sends a random person on the network a string"""
     def send_random_string(self,string): 
         for i in range(0,30):
             try:
-                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # create an 
                 randomclient = random.randint(1,len(self.ip_list)-1) #should start at one becouse the random person should never be the same person
                 client.connect((self.ip_list[randomclient], self.port_list[randomclient]))
-                json_string = json.dumps(string)
-                client.send(json_string.encode('utf-8'))
+                json_string = json.dumps(string) # dump the string in json 
+                client.send(json_string.encode('utf-8')) # encode the json before sending
                 client.close()
                 break
-            except:
-                continue
-            
+            except: # since not all nodes have to be active this can cause an error 
+                continue # so if an error happens continue
+    
+    
+    """send a block to a random person on the network (used for proof of stake)"""       
     def send_random_block(self,block): # sends a block to random person
         while True:
             try:
@@ -204,32 +216,36 @@ class Peer_To_Peer:
 
 
 class Node(object):
+    """a class that creates node objects these objects are then saved in a linked list to enqueue and dequeue from it"""
     def __init__(self, value: int, next_node: "Node" = None):
-        self.value = value
-        self.next = next_node
+        self.value = value # every node has a value  
+        self.next = next_node # every node also has a .next pointer
 
     def __repr__(self):
         return "Node <{}>".format(self.value)
 
 class Queue(object):
+    """the main linked list that has a head and a tail --> used for O(1) enqueue and dequeue"""
     def __init__(self):
-        self.head = None
+        self.head = None # start the linked list with no head and no tail
         self.tail = None
 
+    """the enqueue function is used for """
     def enqueue(self, value: int) -> None:
-        new_node = Node(value)
+        new_node = Node(value) # create a node object and pass the value in it 
 
-        if self.head is None:
-            self.head = new_node
+        if self.head is None: # if the head is no this means that this is the first item in the queue so the head and tail will be the same 
+            self.head = new_node 
             self.tail = self.head
             return
 
-        self.tail.next = new_node
+        self.tail.next = new_node # else it is no the same change the tai;
         self.tail = new_node 
 
+    """Main function that dequeues from the queue"""
     def dequeue(self) -> int:
         try:
-            value = self.head.value
+            value = self.head.value 
             self.head = self.head.next
 
             if self.head is None:
@@ -239,6 +255,7 @@ class Queue(object):
         except:
             print("--> deque is empty")
             pass
+    
 
     def is_empty(self):
         return self.head is None
@@ -246,13 +263,14 @@ class Queue(object):
     def isnotEmpty(self):
         if self.head is not None:
             return True
-    
+        
+    """function that gets the first object in the queue"""
     def first(self):
         return self.head.value
 
-############# Initiating 2 Objects #############
+############# Initiating 3 Objects #############
 
-b1 = Block_Chain()
+b1 = Block_Chain() 
 network = Peer_To_Peer()
 q1 = Queue()
 
@@ -427,7 +445,6 @@ def menu():
 
         if inputt == "exit":
             break
-
 
 
 receive_thread = threading.Thread(target=receive)
